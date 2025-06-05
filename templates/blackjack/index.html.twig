@@ -1,127 +1,277 @@
-{% extends 'base.html.twig' %}
+{# templates/blackjack/index.html.twig #}
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8" />
+    <title>Blackjack - Casino Bord</title>
+    <style>
+        /* Bakgrund som bordstyg */
+        body {
+            font-family: 'Trebuchet MS', Helvetica, sans-serif;
+            background: radial-gradient(circle at center, #145214 0%, #0b2e07 70%);
+            color: #f0f0f0;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
 
-{% block title %}Blackjack{% endblock %}
+        /* Bordets ram */
+        .table {
+            background: linear-gradient(135deg, #0a3b0a, #155215);
+            border: 8px solid #b58a2f;
+            border-radius: 30px;
+            width: 90vw;
+            max-width: 1200px;
+            padding: 2rem 3rem 3rem 3rem;
+            box-shadow:
+                inset 0 0 40px #276227,
+                0 0 20px 4px #b58a2f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-{% block body %}
-<style>
-    .table-container {
-        display: flex;
-        justify-content: center;
-        margin-top: 40px;
-        gap: 40px;
-        flex-wrap: wrap;
-    }
+        /* Dealer-avdelningen */
+        .dealer {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #b58a2f;
+            border-radius: 20px;
+            padding: 1rem 2rem;
+            width: 100%;
+            margin-bottom: 3rem;
+            text-align: center;
+            box-shadow: 0 0 15px #276227;
+        }
+        .dealer h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #f9d84a;
+            text-shadow: 0 0 6px #f9d84a;
+        }
+        .dealer .cards {
+            font-size: 2rem;
+            letter-spacing: 0.5rem;
+            margin-bottom: 0.5rem;
+            user-select: none;
+        }
+        .dealer .points {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #f9d84a;
+            text-shadow: 0 0 4px #f9d84a;
+        }
 
-    .player-box {
-        border: 2px solid #006400;
-        background-color: #013220;
-        color: white;
-        padding: 20px;
-        border-radius: 15px;
-        width: 220px;
-        text-align: center;
-        box-shadow: 0 0 10px #000;
-    }
+        /* Spelare */
+        .players-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            width: 100%;
+        }
 
-    .player-box.active {
-        border-color: gold;
-        box-shadow: 0 0 15px gold;
-    }
+        .player-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #b58a2f;
+            border-radius: 25px;
+            width: 220px;
+            padding: 1.5rem 1.5rem 2rem 1.5rem;
+            box-shadow: 0 0 12px #276227;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: box-shadow 0.3s, border-color 0.3s;
+            user-select: none;
+        }
+        .player-card.active {
+            border-color: #f9d84a;
+            box-shadow: 0 0 25px #f9d84a;
+        }
 
-    .next-card {
-        margin-top: 30px;
-        text-align: center;
-    }
+        .player-card h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+            color: #f9d84a;
+            text-shadow: 0 0 6px #f9d84a;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
 
-    .control-buttons {
-        margin-top: 30px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-    }
+        .cards {
+            font-size: 2rem;
+            letter-spacing: 0.4rem;
+            margin-bottom: 0.5rem;
+            user-select: none;
+        }
+        .points {
+            font-weight: 700;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: #f9d84a;
+            text-shadow: 0 0 4px #f9d84a;
+        }
 
-    body {
-        background-color: #0b3d0b;
-        font-family: 'Segoe UI', sans-serif;
-    }
+        .result {
+            font-weight: 700;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            text-align: center;
+            margin-top: 0.7rem;
+            width: 100%;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            user-select: none;
+        }
+        .result.won {
+            background-color: #4caf50;
+            color: #fff;
+            box-shadow: 0 0 10px #4caf50;
+        }
+        .result.lost {
+            background-color: #e53935;
+            color: #fff;
+            box-shadow: 0 0 10px #e53935;
+        }
+        .result.push {
+            background-color: #ffeb3b;
+            color: #000;
+            box-shadow: 0 0 10px #ffeb3b;
+        }
 
-    h1, h2 {
-        text-align: center;
-        color: #fff;
-    }
-</style>
+        /* Knappar */
+        .buttons {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.8rem;
+        }
+        button {
+            background: linear-gradient(145deg, #f9d84a, #b58a2f);
+            border: none;
+            border-radius: 20px;
+            padding: 0.6rem 1.4rem;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #3b2f02;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow:
+                0 2px 5px #b58a2f,
+                inset 0 2px 5px #f9d84a;
+            transition: background 0.3s ease;
+            user-select: none;
+        }
+        button:hover:not(:disabled) {
+            background: linear-gradient(145deg, #b58a2f, #f9d84a);
+            box-shadow:
+                0 4px 10px #f9d84a,
+                inset 0 3px 6px #b58a2f;
+        }
+        button:disabled {
+            background: #555;
+            color: #999;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
 
-<h1>Blackjack</h1>
-<h2>Spelare {{ currentIndex + 1 }}s tur</h2>
+        /* Footer-knappar */
+        .footer-buttons {
+            margin-top: 3rem;
+            display: flex;
+            gap: 1rem;
+        }
+        .footer-buttons form {
+            display: inline-block;
+        }
 
-<div class="table-container">
-    {% for player in players %}
-        <div class="player-box {% if loop.index0 == currentIndex %}active{% endif %}">
-            <h3>Spelare {{ loop.index }}</h3>
-            <ul style="list-style: none; padding: 0;">
-                {% for card in player.getHand() %}
-                    <li>{{ card.getDisplay() }} ({{ card.getValue()|join('/') }})</li>
+        /* Responsive */
+        @media (max-width: 768px) {
+            .players-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .player-card {
+                width: 90vw;
+            }
+            .table {
+                padding: 1.5rem 2rem 2rem 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="table">
+        <div class="dealer">
+            <h2>Dealer</h2>
+            <div class="cards">
+                {% for card in dealer.getHand() %}
+                    {{ card.getDisplay }}&nbsp;
                 {% endfor %}
-            </ul>
-
-            {% set totals = player.getTotals() %}
-            {% set low    = totals[0] %}
-            {% set high   = totals[1] %}
-
-            <p>
-                Summa:
-                {% if high <= 21 %}
-                    {{ low }} / {{ high }}
-                {% else %}
-                    {{ low }}
-                {% endif %}
-            </p>
-
-            {% if player.isBust() %}
-                <p style="color: red;">Bust</p>
-            {% elseif player.hasBlackjack() %}
-                <p style="color: gold;">Blackjack!</p>
-            {% elseif player.hasStayed() %}
-                <p style="color: lightgreen;">Stannar</p>
-            {% endif %}
+            </div>
+            <div class="points">
+                Poäng: {{ dealerTotalHigh ?? dealerTotalLow }}
+            </div>
         </div>
-    {% endfor %}
-</div>
 
-<div class="control-buttons">
-    {% if not isBust and not hasStayed %}
-        <form method="POST" action="{{ path('blackjack_hit') }}">
-            <button type="submit">Dra kort</button>
-        </form>
+        <div class="players-container">
+            {% for p in players %}
+                <div class="player-card {% if loop.index0 == activePlayerIndex %}active{% endif %}">
+                    <h3>Spelare {{ loop.index }}</h3>
+                    <div class="cards">
+                        {% for card in p.player.getHand() %}
+                            {{ card.getDisplay }}&nbsp;
+                        {% endfor %}
+                    </div>
+                    <div class="points">
+                        Poäng: {{ p.totalHigh ?? p.totalLow }}
+                    </div>
 
-        <form method="POST" action="{{ path('blackjack_stay') }}">
-            <button type="submit">Stanna</button>
-        </form>
-    {% endif %}
+                    {% if p.result is not null %}
+                        <div class="result
+                            {% if p.result == 'won' %}won{% elseif p.result == 'lost' %}lost{% elseif p.result == 'push' %}push{% endif %}">
+                            {% if p.result == 'won' %}
+                                Vann!
+                            {% elseif p.result == 'lost' %}
+                                Förlorade
+                            {% elseif p.result == 'push' %}
+                                Push (Oavgjort)
+                            {% endif %}
+                        </div>
+                    {% endif %}
 
-    <form method="POST" action="{{ path('blackjack_add_player') }}">
-        <button type="submit">Lägg till spelare</button>
-    </form>
+                    {% if activePlayerIndex == loop.index0 and p.result is null %}
+                        <div class="buttons">
+                            <form method="post" action="{{ path('blackjack_hit', {'playerIndex': loop.index0}) }}" style="display:inline;">
+                                <button type="submit">Hit</button>
+                            </form>
+                            <form method="post" action="{{ path('blackjack_stay', {'playerIndex': loop.index0}) }}" style="display:inline;">
+                                <button type="submit">Stand</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
 
-    <form method="POST" action="{{ path('blackjack_remove_player') }}">
-        <button type="submit">Ta bort spelare</button>
-    </form>
+        <div class="footer-buttons">
+            {% if canAddRemovePlayers %}
+                <form method="post" action="{{ path('blackjack_add_player') }}">
+                    <button type="submit">Lägg till spelare</button>
+                </form>
+                <form method="post" action="{{ path('blackjack_remove_player') }}">
+                    <button type="submit">Ta bort spelare</button>
+                </form>
+            {% endif %}
 
-    <form method="POST" action="{{ path('blackjack_reset') }}">
-        <button type="submit">Återställ</button>
-    </form>
-</div>
-
-<div class="next-card">
-    <h3>Nästa kort i leken:</h3>
-    {% if nextCard %}
-        <p style="color: white;">
-            {{ nextCard.getDisplay() }} ({{ nextCard.getSuit() }}{{ nextCard.getValue()|join('/') }})
-        </p>
-    {% else %}
-        <p style="color: white;">Leken är tom.</p>
-    {% endif %}
-    <p style="color: white;">Kort kvar i leken: {{ deckCount }}</p>
-</div>
-{% endblock %}
+            <form method="post" action="{{ path('blackjack_reset') }}">
+                <button type="submit">Omstart</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
