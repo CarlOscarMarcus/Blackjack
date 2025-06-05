@@ -4,23 +4,20 @@ namespace App\DeckHandler;
 
 class Deck
 {
-    /**
-     * @var Card[]
-     */
     private array $cards = [];
 
     public function __construct()
     {
-        $this->initialize();
-        $this->shuffle();
+        $this->initializeDeck();
     }
 
-    private function initialize(): void
+    private function initializeDeck(): void
     {
         $suits = ['♠', '♥', '♦', '♣'];
-        $values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        $values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
         $this->cards = [];
+
         foreach ($suits as $suit) {
             foreach ($values as $value) {
                 $this->cards[] = new Card($suit, $value);
@@ -33,29 +30,37 @@ class Deck
         shuffle($this->cards);
     }
 
-    /**
-     * Drar ett kort från toppen av kortleken
-     * @return Card|null Om inga kort kvar, returnera null
-     */
     public function draw(): ?Card
     {
-        return array_shift($this->cards) ?: null;
+        return array_pop($this->cards) ?: null;
     }
 
-    /**
-     * Returnerar antal kort kvar i leken
-     */
-    public function count(): int
+    public function cardsLeft(): int
     {
         return count($this->cards);
     }
 
-    /**
-     * Returnerar alla kort i leken
-     * @return Card[]
-     */
-    public function getCards(): array
+    public function toArray(): array
     {
-        return $this->cards;
+        return array_map(fn($card) => [$card->getSuit(), $card->getRank()], $this->cards);
     }
+
+    // Recreate deck from array of arrays [[suit, value], ...]
+    public static function fromArray(array $data): self
+    {
+        $deck = new self();
+        $deck->cards = [];
+
+        foreach ($data as [$suit, $value]) {
+            $deck->cards[] = new Card($suit, $value);
+        }
+
+        return $deck;
+    }
+
+    public function peek(): ?Card
+    {
+        return $this->cards[count($this->cards) - 1] ?? null;  // Returns the first card or null if empty
+    }
+
 }
