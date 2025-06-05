@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Blackjack{% endblock %}
+
+{% block body %}
+    <div style="text-align: center; margin-top: 50px;">
+        <h1>Blackjack - Dra ett kort</h1>
+
+        {% if card %}
+            <p style="font-size: 2em;">Du drog: <strong>{{ card }}</strong></p>
+        {% endif %}
+
+        <form method="POST">
+            <button type="submit">Dra kort</button>
+        </form>
+    </div>
+{% endblock %}
