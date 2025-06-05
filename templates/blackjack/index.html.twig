@@ -4,14 +4,60 @@
 
 {% block body %}
     <div style="text-align: center; margin-top: 50px;">
-        <h1>Blackjack - Dra ett kort</h1>
+        <h1>Blackjack</h1>
 
-        {% if card %}
-            <p style="font-size: 2em;">Du drog: <strong>{{ card }}</strong></p>
+        {% if hand is not empty %}
+            <h2>Dina kort:</h2>
+            <ul style="list-style: none; padding: 0;">
+                {% set totalLow = 0 %}
+                {% set totalHigh = 0 %}
+                {% for card in hand %}
+                    {% set values = card.getValue() %}
+                    <li style="font-size: 1.5em;">
+                        {{ card.getDisplay() }}
+                        (
+                        {% if values|length > 1 %}
+                            {{ values[0] }}/{{ values[1] }}
+                        {% else %}
+                            {{ values[0] }}
+                        {% endif %}
+                        )
+                    </li>
+                    {% set totalLow = totalLow + values[0] %}
+                    {% set totalHigh = totalHigh + (values[1] ?? values[0]) %}
+                {% endfor %}
+            </ul>
+
+            <p style="font-size: 1.2em;">
+                Summa:
+                {% if totalLow != totalHigh %}
+                    {{ totalLow }} / {{ totalHigh }}
+                {% else %}
+                    {{ totalLow }}
+                {% endif %}
+            </p>
+
+            {% if isBust %}
+                <p style="color: red; font-weight: bold;">Du förlorade (Bust)!</p>
+            {% elseif hasStayed %}
+                <p style="color: green; font-weight: bold;">
+                    Du stannade på {{ totalHigh <= 21 ? totalHigh : totalLow }}
+                </p>
+            {% endif %}
         {% endif %}
 
-        <form method="POST">
-            <button type="submit">Dra kort</button>
+        {% if not isBust and not hasStayed %}
+            <form method="POST">
+                <button type="submit">Dra kort</button>
+            </form>
+
+            <form method="POST" action="{{ path('blackjack_stay') }}">
+                <button type="submit" style="margin-top: 10px;">Stanna</button>
+            </form>
+        {% endif %}
+
+        <form method="POST" action="{{ path('blackjack_reset') }}">
+            <button type="submit" style="margin-top: 10px;">Återställ</button>
         </form>
     </div>
 {% endblock %}
