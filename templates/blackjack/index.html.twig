@@ -3,61 +3,125 @@
 {% block title %}Blackjack{% endblock %}
 
 {% block body %}
-<div style="text-align: center; margin-top: 50px;">
-    <h1>Blackjack</h1>
+<style>
+    .table-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 40px;
+        gap: 40px;
+        flex-wrap: wrap;
+    }
 
-    {% if hand is not empty %}
-        <h2>Dina kort:</h2>
-        <ul style="list-style: none; padding: 0;">
-            {% for card in hand %}
-                <li>{{ card.getDisplay() }} ({{ card.getValue()|join('/') }})</li>
-            {% endfor %}
-        </ul>
+    .player-box {
+        border: 2px solid #006400;
+        background-color: #013220;
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        width: 220px;
+        text-align: center;
+        box-shadow: 0 0 10px #000;
+    }
 
-        <p style="font-size: 1.2em;">
-            Summa:
-            {% if totalHigh %}
-                {{ totalLow }} / {{ totalHigh }}
-            {% else %}
-                {{ totalLow }}
+    .player-box.active {
+        border-color: gold;
+        box-shadow: 0 0 15px gold;
+    }
+
+    .next-card {
+        margin-top: 30px;
+        text-align: center;
+    }
+
+    .control-buttons {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    body {
+        background-color: #0b3d0b;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    h1, h2 {
+        text-align: center;
+        color: #fff;
+    }
+</style>
+
+<h1>Blackjack</h1>
+<h2>Spelare {{ currentIndex + 1 }}s tur</h2>
+
+<div class="table-container">
+    {% for player in players %}
+        <div class="player-box {% if loop.index0 == currentIndex %}active{% endif %}">
+            <h3>Spelare {{ loop.index }}</h3>
+            <ul style="list-style: none; padding: 0;">
+                {% for card in player.getHand() %}
+                    <li>{{ card.getDisplay() }} ({{ card.getValue()|join('/') }})</li>
+                {% endfor %}
+            </ul>
+
+            {% set totals = player.getTotals() %}
+            {% set low    = totals[0] %}
+            {% set high   = totals[1] %}
+
+            <p>
+                Summa:
+                {% if high <= 21 %}
+                    {{ low }} / {{ high }}
+                {% else %}
+                    {{ low }}
+                {% endif %}
+            </p>
+
+            {% if player.isBust() %}
+                <p style="color: red;">Bust</p>
+            {% elseif player.hasBlackjack() %}
+                <p style="color: gold;">Blackjack!</p>
+            {% elseif player.hasStayed() %}
+                <p style="color: lightgreen;">Stannar</p>
             {% endif %}
-        </p>
+        </div>
+    {% endfor %}
+</div>
 
-        {% if isBust %}
-            <p style="color: red; font-weight: bold;">Du förlorade (Bust)!</p>
-        {% elseif hasStayed %}
-            {% if hasBlackjack %}
-                <p style="color: gold; font-weight: bold;">Blackjack!</p>
-            {% else %}
-                <p style="color: green; font-weight: bold;">
-                    Du stannade på {{ totalHigh ?? totalLow }}
-                </p>
-            {% endif %}
-        {% endif %}
-    {% endif %}
-
+<div class="control-buttons">
     {% if not isBust and not hasStayed %}
         <form method="POST" action="{{ path('blackjack_hit') }}">
             <button type="submit">Dra kort</button>
         </form>
 
         <form method="POST" action="{{ path('blackjack_stay') }}">
-            <button type="submit" style="margin-top: 10px;">Stanna</button>
+            <button type="submit">Stanna</button>
         </form>
     {% endif %}
 
-    <form method="POST" action="{{ path('blackjack_reset') }}">
-        <button type="submit" style="margin-top: 10px;">Återställ</button>
+    <form method="POST" action="{{ path('blackjack_add_player') }}">
+        <button type="submit">Lägg till spelare</button>
     </form>
 
-    <div style="margin-top: 20px;">
-        <h3>Nästa kort i leken:</h3>
-        {% if nextCard %}
+    <form method="POST" action="{{ path('blackjack_remove_player') }}">
+        <button type="submit">Ta bort spelare</button>
+    </form>
+
+    <form method="POST" action="{{ path('blackjack_reset') }}">
+        <button type="submit">Återställ</button>
+    </form>
+</div>
+
+<div class="next-card">
+    <h3>Nästa kort i leken:</h3>
+    {% if nextCard %}
+        <p style="color: white;">
             {{ nextCard.getDisplay() }} ({{ nextCard.getSuit() }}{{ nextCard.getValue()|join('/') }})
-        {% else %}
-            <p>Leken är tom.</p>
-        {% endif %}
-        <p>Kort kvar i leken: {{ deckCount }}</p>
-    </div>
+        </p>
+    {% else %}
+        <p style="color: white;">Leken är tom.</p>
+    {% endif %}
+    <p style="color: white;">Kort kvar i leken: {{ deckCount }}</p>
 </div>
 {% endblock %}
