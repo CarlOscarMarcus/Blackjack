@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\DeckHandler\Card;
 use App\DeckHandler\Deck;
+use App\DeckHandler\Player;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,48 +18,30 @@ class BlackjackController extends AbstractController
     {
         // Load deck or create new deck if missing
         $deckData = $session->get('deck');
-        if (!$deckData) {
-            $deck = new Deck();
-            $deck->shuffle();
-            $session->set('deck', $deck->toArray());
-        } else {
-            $deck = Deck::fromArray($deckData);
-        }
+        $deck = $deckData ? Deck::fromArray($deckData) : (new Deck())->shuffle();
 
         // Load current hand & state
-        $hand = $session->get('hand', []);
-        $hasStayed = $session->get('has_stayed', false);
-        $isBust = $session->get('is_bust', false);
-        $hasBlackjack = $session->get('has_blackjack', false);
+        $playerData = $session->get('player');
+        $player = $playerData ? $this->getPlayer($session) : new \App\DeckHandler\Player();
 
         // Calculate totals
-        [$totalLow, $totalHigh] = $this->calculateTotals($hand);
+        [$totalLow, $totalHigh] = $player->getTotals();
+
+
+        $isBust = $player->isBust();
+        $hasStayed = $player->hasStayed();
+        $hasBlackjack = $player->hasBlackjack();
 
         // Decide if bust or blackjack if not yet set
-        if (!$isBust) {
-            if ($totalLow > 21 && $totalHigh > 21) {
-                $isBust = true;
-                $session->set('is_bust', true);
-            }
-        }
-
-        if (!$hasBlackjack && !$hasStayed) {
-            if ($totalHigh === 21 || $totalLow === 21) {
-                $hasBlackjack = true;
-                $session->set('has_blackjack', true);
-                // Auto stay on blackjack
-                $session->set('has_stayed', true);
-                $hasStayed = true;
-            }
-        }
+        $this->savePlayer($session, $player);
 
         return $this->render('blackjack/index.html.twig', [
-            'hand' => $hand,
-            'hasStayed' => $hasStayed,
-            'isBust' => $isBust,
-            'hasBlackjack' => $hasBlackjack,
+            'hand' => $player->getHand(),
             'totalLow' => $totalLow,
-            'totalHigh' => ($totalHigh <= 21 ? $totalHigh : null),
+            'totalHigh' => $totalHigh <= 21 ? $totalHigh : null,
+            'isBust' => $isBust,
+            'hasStayed' => $hasStayed,
+            'hasBlackjack' => $hasBlackjack,
             'deckCount' => $deck->cardsLeft(),
             'nextCard' => $deck->peek(),
         ]);
@@ -67,45 +50,23 @@ class BlackjackController extends AbstractController
     #[Route('/hit', name: 'blackjack_hit', methods: ['POST'])]
     public function hit(SessionInterface $session): Response
     {
-        // Load deck
-        $deckData = $session->get('deck');
-        if (!$deckData) {
-            $deck = new Deck();
-            $deck->shuffle();
-        } else {
-            $deck = Deck::fromArray($deckData);
-        }
+        // Load deck from session
+        $deck = $this->getDeck($session);
 
-        $hand = $session->get('hand', []);
-        $hasStayed = $session->get('has_stayed', false);
-        $isBust = $session->get('is_bust', false);
-        $hasBlackjack = $session->get('has_blackjack', false);
+        // Load player from session
+        $player = $this->getPlayer($session);
 
-        if (!$hasStayed && !$isBust && !$hasBlackjack) {
+        if ($deck->cardsLeft() > 0 && !$player->hasStayed() && !$player->isBust() && !$player->hasBlackjack()) {
             $card = $deck->draw();
-
-            if ($card) {
-                $hand[] = $card;
-                $session->set('hand', $hand);
-
-                // Save updated deck immediately after draw
-                $session->set('deck', $deck->toArray());
-
-                // Recalculate totals
-                [$totalLow, $totalHigh] = $this->calculateTotals($hand);
-
-                // Bust check
-                if ($totalLow > 21 && $totalHigh > 21) {
-                    $session->set('is_bust', true);
-                }
-
-                // Blackjack check (auto stay)
-                if ($totalHigh === 21 || $totalLow === 21) {
-                    $session->set('has_blackjack', true);
-                    $session->set('has_stayed', true);
-                }
-            }
+            $player->addCard($card);
         }
+
+        // Save updated objects to session
+        $this->saveDeck($session, $deck);
+        $this->savePlayer($session, $player);
+
+
+    return $this->redirectToRoute('blackjack_index');
 
         return $this->redirectToRoute('blackjack_index');
     }
@@ -113,21 +74,23 @@ class BlackjackController extends AbstractController
     #[Route('/stay', name: 'blackjack_stay', methods: ['POST'])]
     public function stay(SessionInterface $session): Response
     {
-        $session->set('has_stayed', true);
+        $player = $this->getPlayer($session);
+        $player->stay();
+        $this->savePlayer($session, $player);
+
         return $this->redirectToRoute('blackjack_index');
     }
 
-    #[Route('/reset', name: 'blackjack_reset')] // , methods: ['POST']
+    #[Route('/reset', name: 'blackjack_reset')] //, methods: ['POST']
     public function reset(SessionInterface $session): Response
     {
-        $deck = new Deck();
+        $deck = new \App\DeckHandler\Deck();
         $deck->shuffle();
-        $session->set('deck', $deck->toArray());
 
-        $session->remove('hand');
-        $session->remove('has_stayed');
-        $session->remove('is_bust');
-        $session->remove('has_blackjack');
+        $player = new \App\DeckHandler\Player();
+
+        $this->saveDeck($session, $deck);
+        $this->savePlayer($session, $player);
 
         return $this->redirectToRoute('blackjack_index');
     }
@@ -150,5 +113,27 @@ class BlackjackController extends AbstractController
         }
 
         return [$totalLow, $totalHigh];
+    }
+
+    private function getPlayer(SessionInterface $session): Player
+    {
+        $data = $session->get('player');
+        return $data ? Player::fromArray($data) : new Player();
+    }
+
+    private function savePlayer(SessionInterface $session, Player $player): void
+    {
+        $session->set('player', $player->toArray());
+    }
+
+    private function getDeck(SessionInterface $session): Deck
+    {
+        $data = $session->get('deck');
+        return $data ? Deck::fromArray($data) : (new Deck())->shuffleAndReturn();
+    }
+
+    private function saveDeck(SessionInterface $session, Deck $deck): void
+    {
+        $session->set('deck', $deck->toArray());
     }
 }

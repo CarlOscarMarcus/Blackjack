@@ -4,40 +4,73 @@ namespace App\DeckHandler;
 
 class Card
 {
-    private string $suit;
-    private string $rank;
+    private int $suit;       // Stored as 1–4 (♠ ♥ ♦ ♣)
+    private string $value;   // e.g., 'A', '2', ..., 'K'
 
-    public function __construct(string $suit, string $rank)
+    // Suit ID to symbol map
+    private const SUIT_ID_TO_CHAR = [
+        1 => '♠',
+        2 => '♥',
+        3 => '♦',
+        4 => '♣',
+    ];
+
+    private const SUIT_CHAR_TO_ID = [
+        '♠' => 1,
+        '♥' => 2,
+        '♦' => 3,
+        '♣' => 4,
+    ];
+
+
+    public function __construct(int $suit, string $value)
     {
         $this->suit = $suit;
-        $this->rank = $rank;
+        $this->value = $value;
     }
 
-    public function getSuit(): string
+    public function getSuitId(): int
     {
         return $this->suit;
     }
 
-    public function getRank(): string
+    public function getSuit(): string
     {
-        return $this->rank;
+        return self::SUIT_ID_TO_CHAR[$this->suit] ?? '?';
     }
 
-    /**
-     * Returns the value(s) of the card.
-     * @return int[] e.g., [10] for K, [1, 11] for A, [2] for 2
-     */
     public function getValue(): array
     {
-        return match ($this->rank) {
+        return match ($this->value) {
             'A' => [1, 11],
             'K', 'Q', 'J' => [10],
-            default => [(int)$this->rank],
+            default => [(int)$this->value]
         };
     }
 
     public function getDisplay(): string
     {
-        return $this->rank . $this->suit;
+        return $this->getSuit() . $this->value;
+    }
+
+    public function getRawValue(): string
+    {
+        return $this->value;
+    }
+
+    public static function fromArray(Array $data): self
+    {
+        $char = $data[0];
+        $value = $data[1];
+        $suitId = self::SUIT_CHAR_TO_ID[$char] ?? 0;
+        return new self($suitId, $value);
+    }
+
+    public static function fromString(string $cardString): self
+    {
+        $char = mb_substr($cardString, 0, 1);
+        $value = mb_substr($cardString, 1);
+        $suitId = self::SUIT_CHAR_TO_ID[$char] ?? 0;
+        return new self($suitId, $value);
     }
 }

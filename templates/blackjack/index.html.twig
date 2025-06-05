@@ -51,14 +51,13 @@
     </form>
 
     <div style="margin-top: 20px;">
-    <h3>Next card in deck:</h3>
-    {% if nextCard %}
-        {{ nextCard.getDisplay() }} ({{ nextCard.getSuit() }}{{ nextCard.getValue()|join('/') }})
-    {% else %}
-        <p>The deck is empty.</p>
-    {% endif %}
-    <p>Cards left in deck: {{ deckCount }}</p>
-</div>
-
+        <h3>Nästa kort i leken:</h3>
+        {% if nextCard %}
+            {{ nextCard.getDisplay() }} ({{ nextCard.getSuit() }}{{ nextCard.getValue()|join('/') }})
+        {% else %}
+            <p>Leken är tom.</p>
+        {% endif %}
+        <p>Kort kvar i leken: {{ deckCount }}</p>
+    </div>
 </div>
 {% endblock %}

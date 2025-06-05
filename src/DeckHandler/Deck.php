@@ -13,7 +13,7 @@ class Deck
 
     private function initializeDeck(): void
     {
-        $suits = ['♠', '♥', '♦', '♣'];
+        $suits = [1, 2, 3, 4];
         $values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
         $this->cards = [];
@@ -42,7 +42,7 @@ class Deck
 
     public function toArray(): array
     {
-        return array_map(fn($card) => [$card->getSuit(), $card->getRank()], $this->cards);
+        return array_map(fn($card) => [$card->getSuit(), $card->getValue()], $this->cards);
     }
 
     // Recreate deck from array of arrays [[suit, value], ...]
@@ -52,7 +52,7 @@ class Deck
         $deck->cards = [];
 
         foreach ($data as [$suit, $value]) {
-            $deck->cards[] = new Card($suit, $value);
+            $deck->cards[] = Card::fromArray([$suit, (string)$value[0]]);
         }
 
         return $deck;
