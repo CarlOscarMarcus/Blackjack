@@ -1,0 +1,3 @@
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/CarlOscarMarcus/mvc-me-report/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/CarlOscarMarcus/mvc-me-report/?branch=main)
+[![Code Coverage](https://scrutinizer-ci.com/g/CarlOscarMarcus/mvc-me-report/badges/coverage.png?b=main)](https://scrutinizer-ci.com/g/CarlOscarMarcus/mvc-me-report/?branch=main)
+[![Build Status](https://scrutinizer-ci.com/g/CarlOscarMarcus/mvc-me-report/badges/build.png?b=main)](https://scrutinizer-ci.com/g/CarlOscarMarcus/mvc-me-report/build-status/main)
