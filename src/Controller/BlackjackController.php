@@ -18,40 +18,80 @@ class BlackjackController extends AbstractController
         $hasStayed = $session->get('has_stayed', false);
         $isBust = $session->get('is_bust', false);
 
-        if ($request->getMethod() === 'POST' && !$hasStayed && !$isBust) {
-            $suits = ['♠', '♥', '♦', '♣'];
-            $values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        // Calculate totals
+        $totalLow = 0;
+        $totalHigh = 0;
 
-            $card = new Card(
-                $suits[array_rand($suits)],
-                $values[array_rand($values)]
-            );
+        foreach ($hand as $card) {
+            $vals = $card->getValue();
+            $totalLow += $vals[0];
+            $totalHigh += $vals[1] ?? $vals[0];
+        }
 
-            $hand[] = $card;
-            $session->set('hand', $hand);
+        if ($totalLow > 21 && $totalHigh > 21) {
+            $isBust = true;
+            $session->set('is_bust', true);
+        }
 
-            // Kontrollera bust
-            $totalLow = 0;
-            $totalHigh = 0;
-
-            foreach ($hand as $c) {
-                $vals = $c->getValue();
-                $totalLow += $vals[0];
-                $totalHigh += $vals[1] ?? $vals[0];
-            }
-
-            // Om båda summor > 21 = bust
-            if ($totalLow > 21 && $totalHigh > 21) {
-                $session->set('is_bust', true);
-            }
+        // Determine what to show
+        if ($totalHigh != 21 or $totalLow != 21) {
+            $showHigh = $totalHigh <= 21 && $totalLow !== $totalHigh;
+        } else {
+            $showHigh = "Black Jack!";
         }
 
         return $this->render('blackjack/index.html.twig', [
             'hand' => $hand,
             'hasStayed' => $hasStayed,
-            'isBust' => $session->get('is_bust', false)
+            'isBust' => $isBust,
+            'totalLow' => $totalLow,
+            'totalHigh' => $showHigh ? $totalHigh : null,
+            'hasBlackjack' => $session->get('has_blackjack', false)
         ]);
     }
+
+    #[Route('/hit', name: 'blackjack_hit', methods: ['POST'])]
+    public function hit(SessionInterface $session): Response
+    {
+        $hand = $session->get('hand', []);
+        $hasStayed = $session->get('has_stayed', false);
+        $isBust = $session->get('is_bust', false);
+
+        if (!$hasStayed && !$isBust) {
+            $card = new Card(
+                ['♠', '♥', '♦', '♣'][array_rand(['♠', '♥', '♦', '♣'])],
+                "A"
+            );
+
+            $hand[] = $card;
+            $session->set('hand', $hand);
+
+            // Recalculate bust after hit
+            $totalLow = 0;
+            $totalHigh = 0;
+            foreach ($hand as $card) {
+                $vals = $card->getValue();
+                $totalLow += $vals[0];
+                $totalHigh += $vals[1] ?? $vals[0];
+            }
+
+            if ($totalLow > 21 && $totalHigh > 21) {
+                $session->set('is_bust', true);
+            }
+
+            // Auto-stand if 21
+            $validTotal = ($totalHigh <= 21) ? $totalHigh : $totalLow;
+            if ($validTotal === 21) {
+                $session->set('has_stayed', true);
+                $session->set('has_blackjack', true);
+            } else {
+                $session->remove('has_blackjack');
+            }
+        }
+
+        return $this->redirectToRoute('blackjack_index');
+    }
+
 
     #[Route('/stay', name: 'blackjack_stay', methods: ['POST'])]
     public function stay(SessionInterface $session): Response
@@ -66,6 +106,7 @@ class BlackjackController extends AbstractController
         $session->remove('hand');
         $session->remove('has_stayed');
         $session->remove('is_bust');
+        $session->remove('has_blackjack');
         return $this->redirectToRoute('blackjack_index');
     }
 

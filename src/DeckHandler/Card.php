@@ -5,35 +5,39 @@ namespace App\DeckHandler;
 class Card
 {
     private string $suit;
-    private string $value;
+    private string $rank;
 
-    public function __construct(string $suit, string $value)
+    public function __construct(string $suit, string $rank)
     {
         $this->suit = $suit;
-        $this->value = $value;
+        $this->rank = $rank;
+    }
+
+    public function getSuit(): string
+    {
+        return $this->suit;
+    }
+
+    public function getRank(): string
+    {
+        return $this->rank;
+    }
+
+    /**
+     * Returns the value(s) of the card.
+     * @return int[] e.g., [10] for K, [1, 11] for A, [2] for 2
+     */
+    public function getValue(): array
+    {
+        return match ($this->rank) {
+            'A' => [1, 11],
+            'K', 'Q', 'J' => [10],
+            default => [(int)$this->rank],
+        };
     }
 
     public function getDisplay(): string
     {
-        return $this->value . $this->suit;
-    }
-
-    public function getValue(): array
-    {
-        if (is_numeric($this->value)) {
-            $intValue = (int)$this->value;
-            return [$intValue];
-        }
-
-        if (in_array($this->value, ['J', 'Q', 'K'])) {
-            return [10];
-        }
-
-        // Ess = 1 eller 11
-        if ($this->value === 'A') {
-            return [1, 11];
-        }
-
-        return [0]; // borde inte hända
+        return $this->rank . $this->suit;
     }
 }
